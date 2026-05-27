@@ -1,0 +1,51 @@
+version: "3"
+services:
+  ngd_slam:
+    image: "ngd_slam:latest"
+    container_name: ngd_slam_sys
+    environment:
+      DISPLAY: $DISPLAY
+      PATH: $PATH
+      NVIDIA_DRIVER_CAPABILITIES: all
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ~/.Xauthority:/root/.Xauthority
+      - /dev/bus/usb:/dev/bus/usb
+      - ../Dataset:/home/ngd_slam/Dataset
+      - ../Output:/home/ngd_slam/Output
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    network_mode: "host"
+    privileged: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  var_slam:
+    image: "ngd_slam:latest"
+    container_name: var_slam_sys
+    environment:
+      DISPLAY: $DISPLAY
+      PATH: $PATH
+      NVIDIA_DRIVER_CAPABILITIES: all
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ~/.Xauthority:/root/.Xauthority
+      - /dev/bus/usb:/dev/bus/usb
+      - ../../Adaptive-Dynamic-SLAM:/home/Adaptive-Dynamic-SLAM
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    network_mode: "host"
+    privileged: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
