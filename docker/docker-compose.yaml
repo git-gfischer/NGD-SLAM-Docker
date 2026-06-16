@@ -4,27 +4,38 @@ services:
     image: "ngd_slam:latest"
     container_name: ngd_slam_sys
     environment:
-      DISPLAY: $DISPLAY
-      PATH: $PATH
-      NVIDIA_DRIVER_CAPABILITIES: all
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PATH=${PATH}
+      - LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ~/.Xauthority:/root/.Xauthority
-      - /dev/bus/usb:/dev/bus/usb
-      - ../Dataset:/home/ngd_slam/Dataset
-      - ../Output:/home/ngd_slam/Output
+      - /dev:/dev
+      - ../src:/home/ngd_slam/src
+      - ../include:/home/ngd_slam/include
+      - ../CMakeLists.txt:/home/ngd_slam/CMakeLists.txt
+      - ../Vocabulary:/home/ngd_slam/Vocabulary
+      - ../Examples:/home/ngd_slam/Examples
+      - ../build.sh:/home/ngd_slam/build.sh
+      #- ../models:/home/workspace/ngd_slam/models
+      #- /home/fischer/Desktop/Fischer/iit/VAR-SLAM/input_data:/home/ngd_slam/input_data
+      - /media/fischer/T7/OpenLoris:/home/ngd_slam/input_data
+      #- /media/fischer/Samsung_T5/dataset_SLAM/BONN:/home/ngd_slam/input_data
+      - ../evaluation:/home/ngd_slam/evaluation
+      - ../output_data:/home/ngd_slam/output_data
+      - ../cfg:/home/ngd_slam/cfg
+    # /dev:/dev exposes nodes, but Docker still blocks opens unless V4L2 is allowed:
     device_cgroup_rules:
-      - 'c 189:* rmw'
+      - 'c 81:* rmw'
+    gpus: all
     network_mode: "host"
     privileged: true
     tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    ipc: host
+    command: ["/bin/bash"]
+    
   var_slam:
     image: "ngd_slam:latest"
     container_name: var_slam_sys

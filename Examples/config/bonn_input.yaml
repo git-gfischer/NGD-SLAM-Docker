@@ -1,0 +1,30 @@
+%YAML:1.0
+---
+# Template base config for BONN RGB-D Dynamic dataset evaluation.
+# run_bonn.sh generates a per-run copy of this file for each sequence/config/run
+# combination, overriding fields as needed.  You do not normally edit this file
+# directly — set the corresponding environment variables in run_bonn.sh instead.
+
+# Path to the ORB-SLAM3 camera/ORB settings file for the BONN dataset.
+# See input_data/bonn1200.yaml for a ready-to-use template.
+settings_file: "input_data/bonn1200.yaml"
+
+# Root directory that contains the individual sequence folders.
+# Each folder must have rgb/, depth/ sub-directories and an association.txt.
+sequence_path: "input_data/rgbd_bonn_sequence_name"
+
+# Pre-computed RGB↔depth association file (TUM format):
+#   <rgb_ts> <rgb_relpath> <depth_ts> <depth_relpath>
+# Generate with: python3 evaluation/associate.py rgb.txt depth.txt
+association_file: "input_data/rgbd_bonn_sequence_name/association.txt"
+
+# Robust loss kernel used in pose-graph optimisation.
+# Recognised names: Huber | Barron | BarronSignalHuber
+# (Currently logged for provenance; full kernel switching requires recompile.)
+robust_kernel: "Huber"
+
+# Enable YOLO-based dynamic-object filtering (0 = off, 1 = on).
+dynamic_filtering: 0
+
+# Show per-frame object-detection overlay window (0 = off, 1 = on).
+object_detection_viewer: 0

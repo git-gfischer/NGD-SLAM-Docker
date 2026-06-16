@@ -1,0 +1,27 @@
+%YAML:1.0
+---
+# Template base config for OpenLORIS-Scene dataset evaluation.
+# run_openloris.sh generates a per-run copy of this file for each
+# sequence/config/run combination.  Set environment variables in
+# run_openloris.sh to override fields without editing this file.
+
+# Path to the ORB-SLAM3 camera/ORB settings file for OpenLORIS.
+# See input_data/openloris.yaml for a ready-to-use template.
+settings_file: "input_data/openloris.yaml"
+
+# Root directory for a specific OpenLORIS sequence (e.g. market1-3).
+# Must contain rgb/, depth/ sub-directories and association.txt.
+sequence_path: "input_data/market1-3"
+
+# Pre-computed RGB↔depth association file (TUM format).
+association_file: "input_data/market1-3/association.txt"
+
+# Robust loss kernel (logged for provenance).
+# Recognised names: Huber | Barron | BarronSignalHuber
+robust_kernel: "Huber"
+
+# Enable YOLO-based dynamic-object filtering (0 = off, 1 = on).
+dynamic_filtering: 1
+
+# Show per-frame object-detection overlay window (0 = off, 1 = on).
+object_detection_viewer: 0

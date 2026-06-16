@@ -154,7 +154,7 @@ void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageF
     {
         string s;
         getline(fAssociation,s);
-        if(!s.empty())
+        if(!s.empty() && s[0] != '#')
         {
             stringstream ss;
             ss << s;
