@@ -23,6 +23,7 @@ services:
       #- /home/fischer/Desktop/Fischer/iit/VAR-SLAM/input_data:/home/ngd_slam/input_data
       - /media/fischer/T7/OpenLoris:/home/ngd_slam/input_data
       #- /media/fischer/Samsung_T5/dataset_SLAM/BONN:/home/ngd_slam/input_data
+      #- /media/fischer/Samsung_T5/dataset_SLAM/TUM:/home/ngd_slam/input_data
       - ../evaluation:/home/ngd_slam/evaluation
       - ../output_data:/home/ngd_slam/output_data
       - ../cfg:/home/ngd_slam/cfg

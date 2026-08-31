@@ -1564,9 +1564,16 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB, const cv::Mat &imD, c
     if(RGBDInitialized) mbStartOpticalFlow = true;
     else mbStartOpticalFlow = false;
 
+    std::cerr << "[Track] InsertInput frame=" << mFrameNum
+              << " rgb=" << mImRGB.cols << "x" << mImRGB.rows
+              << " depth=" << mImDepth2.cols << "x" << mImDepth2.rows
+              << " depthType=" << mImDepth2.type() << std::endl;
     mpYOLO->InsertInput(mImRGB, mImDepth2);
+    std::cerr << "[Track] InsertInput done, waiting for YOLO output..." << std::endl;
 
-    // Dynamic Tracking
+    // Dynamic Tracking — wait for YOLO with a 3-second timeout so the pipeline
+    // never hangs if YOLO is unresponsive (e.g. first-frame DNN init delay).
+    auto yoloDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
     while(true)
     {
         std::vector<cv::Mat> outputYOLO = mpYOLO->GetOutput();
@@ -1592,6 +1599,15 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB, const cv::Mat &imD, c
             break;
         }
         else if(mFrameNum > 1) break;
+
+        if(std::chrono::steady_clock::now() >= yoloDeadline) {
+            std::cerr << "[Track] YOLO timeout on frame=" << mFrameNum
+                      << ", proceeding with empty mask" << std::endl;
+            mImMask = cv::Mat::zeros(mImGray.rows, mImGray.cols, CV_8UC1);
+            break;
+        }
+        // Yield CPU while waiting for YOLO thread to finish inference.
+        usleep(1000);
     }
     if(mFrameNum > 1) PredictCurrentMask();
 

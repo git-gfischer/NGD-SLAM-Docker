@@ -113,13 +113,21 @@ namespace ORB_SLAM3
 
 
 				int expansion = 30;
-				for (int y = 0; y < imDepthLocal.rows; ++y)
+				// Clamp the expanded box to image bounds so the inner loop never
+				// reads outside the image and avoids scanning the whole frame for
+				// every detection (critical for crowded scenes with many people).
+				int y0 = std::max(box.y - expansion, 0);
+				int y1 = std::min(box.y + box.height + expansion, imDepthLocal.rows);
+				int x0 = std::max(box.x - expansion, 0);
+				int x1 = std::min(box.x + box.width + expansion, imDepthLocal.cols);
+				for (int y = y0; y < y1; ++y)
 				{
-					for (int x = 0; x < imDepthLocal.cols; ++x)
+					const float* depthRow = imDepthLocal.ptr<float>(y);
+					uchar*       maskRow  = localMask.ptr<uchar>(y);
+					for (int x = x0; x < x1; ++x)
 					{
-						if (std::abs(imDepthLocal.at<float>(y, x) - value) <= 0.33 &&
-							x >= box.x - expansion && x < box.x + box.width + expansion && 
-							y >= box.y - expansion && y < box.y + box.height + expansion) localMask.at<uchar>(y, x) = 1;
+						if (std::abs(depthRow[x] - value) <= 0.33f)
+							maskRow[x] = 1;
 					}
 				}
 
@@ -165,12 +173,17 @@ namespace ORB_SLAM3
 
 	cv::Mat YOLO::Detect(const cv::Mat& imRGB, const cv::Mat& imDepth, const float maxBoxRatio)
 	{
+		std::cerr << "[YOLO] Detect start: imRGB=" << imRGB.cols << "x" << imRGB.rows
+		          << " type=" << imRGB.type() << std::endl;
 		cv::Mat blob;
 		cv::dnn::blobFromImage(imRGB, blob, 1 / 255.0, cv::Size(this->inpWidth, this->inpHeight), cv::Scalar(0, 0, 0), true, false);
+		std::cerr << "[YOLO] blob created, calling net.forward..." << std::endl;
 		this->net.setInput(blob);
 		std::vector<cv::Mat> outs;
 		this->net.forward(outs, this->net.getUnconnectedOutLayersNames());
+		std::cerr << "[YOLO] net.forward done, outs.size=" << outs.size() << std::endl;
 		cv::Mat mask = this->postprocess(imRGB, imDepth, outs, maxBoxRatio);
+		std::cerr << "[YOLO] postprocess done" << std::endl;
 
 		return mask;
 	}
@@ -214,12 +227,17 @@ namespace ORB_SLAM3
 
 	void YOLO::Run()
 	{
+		std::cerr << "[YOLO::Run] thread started" << std::endl;
 		int counter = 0;
 		while(1)
 		{
+			if(counter % 200 == 0)
+				std::cerr << "[YOLO::Run] acquiring inputLock, iter=" << counter << std::endl;
 			std::unique_lock<std::mutex> inputLock(mInputMutex);
-			if(mInputPair.size() == 2)
+			size_t inputSize = mInputPair.size();
+			if(inputSize == 2)
 			{
+				std::cerr << "[YOLO::Run] got input, iter=" << counter << std::endl;
 				cv::Mat imRGB = mInputPair[0];
 				cv::Mat imDepth = mInputPair[1];
 				mInputPair.clear();
@@ -233,15 +251,23 @@ namespace ORB_SLAM3
 				mOutputPair.clear();
 				mOutputPair.push_back(imGray);
 				mOutputPair.push_back(imMask);
+				std::cerr << "[YOLO::Run] output stored" << std::endl;
 			}
 			else
 			{
 				inputLock.unlock();
-				// std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				if(counter % 200 == 0)
+					std::cerr << "[YOLO::Run] idle iter=" << counter << " inputSize=" << inputSize << std::endl;
+				std::this_thread::sleep_for(std::chrono::milliseconds(5));
 			}
 
-			if(CheckFinish()) break;
+			counter++;
+			if(CheckFinish()) {
+				std::cerr << "[YOLO::Run] CheckFinish=true, exiting loop" << std::endl;
+				break;
+			}
 		}
+		std::cerr << "[YOLO::Run] thread exiting" << std::endl;
 	}
 
 	void YOLO::RequestFinish()
